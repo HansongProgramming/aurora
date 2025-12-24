@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AR.js Aurora Ribbon + VR Switch</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- AR.js -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    #vrButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999;
+      padding: 14px 18px;
+      font-size: 16px;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      border-radius: 8px;
+      border: none;
+    }
+  </style>
+</head>
+
+<body style="margin:0; overflow:hidden;">
+
+<button id="vrButton">Enter VR</button>
+
+<!-- ================= AR SCENE ================= -->
+<a-scene
+  id="arScene"
+  embedded
+  vr-mode-ui="enabled: false"
+  renderer="logarithmicDepthBuffer: true;"
+  arjs="sourceType: webcam; debugUIEnabled: false;"
+>
+
+  <a-camera></a-camera>
+
+<a-assets>
+  <img id="auroraTex" src="aur.png" crossorigin="anonymous">
+</a-assets>
+
+<a-entity
+  geometry="primitive: plane; width: 499; height: 2.8; segmentsWidth: 200; segmentsHeight: 20"
+  material="shader: flat; src: #auroraTex; transparent: true; opacity: 0.8; side: double; depthWrite: false; blending: additive"
+  position="0 30 -10"
+  rotation="-20 0 0"
+  aurora-ribbon="speed: 1.0; timeOffset: 0; waveScale: 1.0"
+></a-entity>
+
+<a-entity
+  geometry="primitive: plane; width: 500; height: 26; segmentsWidth: 200; segmentsHeight: 20"
+  material="shader: flat; src: #auroraTex; transparent: true; opacity: 0.6; side: double; depthWrite: false; blending: additive"
+  position="0 39 -11"
+  rotation="-4 5 0"
+  aurora-ribbon="speed: 0.7; timeOffset: 3; waveScale: 0.8"
+></a-entity>
+
+<a-entity
+  geometry="primitive: plane; width: 127; height: 38; segmentsWidth: 200; segmentsHeight: 20"
+  material="shader: flat; src: #auroraTex; transparent: true; opacity: 0.5; side: double; depthWrite: false; blending: additive"
+  position="0 30 -12"
+  rotation="-25 -4 0"
+  aurora-ribbon="speed: 1.4; timeOffset: 7.2; waveScale: 2.3"
+></a-entity>
+
+
+</a-scene>
+
+<script>
+AFRAME.registerComponent("aurora-ribbon", {
+  schema: {
+    speed: { type: "number", default: 1.0 },
+    timeOffset: { type: "number", default: 0 },
+    waveScale: { type: "number", default: 1.0 }
+  },
+
+  tick(time) {
+    const mesh = this.el.getObject3D("mesh");
+    if (!mesh) return;
+
+    const pos = mesh.geometry.attributes.position;
+    const t = time / 1000 * this.data.speed + this.data.timeOffset;
+
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+
+      const nx = x / 15;
+
+      const wave1 = Math.sin(nx * 2 + t * 0.6) * 1.2 * this.data.waveScale;
+      const wave2 = Math.sin(nx * 6 - t * 1.2) * 0.3 * this.data.waveScale;
+      const lift  = Math.sin(y * 2 + t) * 0.15;
+
+      pos.setZ(i, wave1 + wave2 + lift);
+    }
+
+    pos.needsUpdate = true;
+    mesh.geometry.computeVertexNormals();
+  }
+});
+</script>
+
+
+
+/* ================= VR MODE ================= */
+if (new URLSearchParams(window.location.search).get("vr")) {
+  document.body.innerHTML = `
+    <a-scene vr-mode-ui="enabled: true">
+      <a-camera position="0 0 4"></a-camera>
+
+      <a-entity
+        geometry="primitive: plane; width:300; height:359; segmentsWidth:200; segmentsHeight:20"
+        material="shader: standard; src: url(aur.png); transparent:true; opacity:0.9; side:double"
+        rotation="-20 0 0"
+        aurora-ribbon
+      ></a-entity>
+    </a-scene>
+  `;
+}
+</script>
+
+</body>
+</html>
